@@ -38,10 +38,7 @@ One-script installer that connects a **Brother DCP-T720DW** scanner to a **Paper
 ## Quick install
 
 ```bash
-wget -O install.sh https://raw.githubusercontent.com/razvancucu27/Brother-DCP-T720WD-to-Paperless/main/install.sh
-chmod +x install.sh
-nano install.sh        # edit the CONFIG block at the top
-bash install.sh
+wget -O install.sh https://raw.githubusercontent.com/razvancucu27/Brother-DCP-T720WD-to-Paperless/main/install.sh && chmod +x install.sh && nano install.sh && bash install.sh
 ```
 
 ### CONFIG block (edit before running)
@@ -56,7 +53,36 @@ bash install.sh
 | `RESOLUTION` | Scan resolution in DPI | `300` |
 | `SCAN_SOURCE` | Scan source (see below) | `FlatBed` |
 
-### Scan source options
+---
+
+## Switching between FlatBed and ADF
+
+Use the included `scan-mode.sh` script to switch scan modes without manually editing config files.
+
+```bash
+# Show current mode
+bash scan-mode.sh status
+
+# Switch to FlatBed (single page, 35s debounce)
+bash scan-mode.sh flatbed
+
+# Switch to ADF (multi-page, 3s debounce)
+bash scan-mode.sh adf
+```
+
+### FlatBed mode
+- Scans one page at a time from the glass
+- After scanning, the printer asks if you want to scan another page — say **No**
+- A 35s debounce prevents the "No" button from triggering a duplicate scan
+
+### ADF mode
+- Place all pages in the top tray
+- All pages are scanned automatically in a single file
+- No page prompts — the ADF handles everything
+
+### Scan source options (manual)
+
+If you prefer to edit the config directly:
 
 | Value | Description |
 |---|---|
@@ -67,25 +93,6 @@ bash install.sh
 To check what your scanner supports:
 ```bash
 scanimage --device-name="brother5:net1;dev0" -A 2>&1 | grep -i source
-```
-
----
-
-## Switching between FlatBed and ADF
-
-Edit the config file:
-```bash
-nano /etc/brother-scan-to-paperless/config.json
-```
-
-Change the `source` field:
-```json
-"source": "Automatic Document Feeder(left aligned)"
-```
-
-Then restart:
-```bash
-systemctl restart brother-scan-to-paperless
 ```
 
 ---
@@ -107,6 +114,9 @@ nano /etc/brother-scan-to-paperless/config.json
 
 # Test scanner manually
 scanimage --device-name="brother5:net1;dev0" --resolution=300 --format=tiff > /tmp/test.tiff
+
+# Switch scan mode
+bash scan-mode.sh [flatbed|adf|status]
 ```
 
 ---
@@ -137,6 +147,11 @@ The installer applies 4 patches to the upstream [vanessa/brother-scan-to-paperle
 
 **Document jam error on flatbed**
 - Set `"source": "FlatBed"` in `/etc/brother-scan-to-paperless/config.json`
+- Or run: `bash scan-mode.sh flatbed`
+
+**Duplicate documents in Paperless**
+- Enable duplicate detection in Paperless: `PAPERLESS_CONSUMER_DELETE_DUPLICATES=true`
+- Or switch to FlatBed mode which has a 35s debounce: `bash scan-mode.sh flatbed`
 
 **Daemon not starting**
 ```bash
